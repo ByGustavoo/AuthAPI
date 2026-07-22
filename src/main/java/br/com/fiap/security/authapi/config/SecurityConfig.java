@@ -8,10 +8,13 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.Customizer;
-import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration
@@ -43,8 +46,12 @@ public class SecurityConfig {
      * Configurando o Gerenciador de Autenticação
      */
     @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) {
-        return authenticationConfiguration.getAuthenticationManager();
+    public AuthenticationManager authenticationManager(HttpSecurity httpSecurity) {
+        // HttpSecurity muda a configuração de autenticação padrão, para Http Basic
+        var authenticationManagerBuilder = httpSecurity.getSharedObject(AuthenticationManagerBuilder.class);
+        authenticationManagerBuilder.userDetailsService(userDetailsService()).passwordEncoder(passwordEncoder());
+
+        return authenticationManagerBuilder.build();
     }
 
     @Bean
@@ -59,12 +66,29 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) {
         httpSecurity.authorizeHttpRequests(authorizeRequests -> {
-            authorizeRequests.requestMatchers("/AuthAPI/public").permitAll();
-            authorizeRequests.requestMatchers("/AuthAPI/logout").permitAll();
+            authorizeRequests.requestMatchers("/public").permitAll();
+            authorizeRequests.requestMatchers("/logout").permitAll();
             authorizeRequests.anyRequest().authenticated();
         });
 
-        httpSecurity.formLogin(Customizer.withDefaults());
+        httpSecurity.httpBasic(Customizer.withDefaults());
         return httpSecurity.build();
+    }
+
+    @Bean
+    public UserDetailsService userDetailsService() {
+        InMemoryUserDetailsManager manager = new InMemoryUserDetailsManager();
+
+        manager.createUser(User.withUsername("usuario")
+                .password(passwordEncoder().encode("senha"))
+                .roles("USER")
+                .build());
+
+        manager.createUser(User.withUsername("admin")
+                .password(passwordEncoder().encode("password"))
+                .roles("ADMIN", "USER")
+                .build());
+
+        return manager;
     }
 }
