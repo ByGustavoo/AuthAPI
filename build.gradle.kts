@@ -1,5 +1,6 @@
 plugins {
 	java
+	id("jacoco")
 	id("org.springframework.boot") version "4.1.0"
 	id("io.spring.dependency-management") version "1.1.7"
 }
@@ -11,6 +12,15 @@ java {
 	toolchain {
 		languageVersion = JavaLanguageVersion.of(21)
 	}
+}
+
+tasks.named<Jar>("jar") {
+	enabled = false
+}
+
+configurations.configureEach {
+	exclude(group = "ch.qos.logback", module = "logback-classic")
+	exclude(group = "org.springframework.boot", module = "spring-boot-starter-logging")
 }
 
 repositories {
@@ -32,6 +42,10 @@ dependencies {
 	compileOnly("org.projectlombok:lombok")
 	annotationProcessor("org.projectlombok:lombok")
 
+	implementation("org.slf4j:slf4j-api")
+	implementation("org.apache.logging.log4j:log4j-slf4j-impl")
+	implementation("org.springframework.boot:spring-boot-starter-log4j2")
+
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 	testImplementation("org.springframework.boot:spring-boot-starter-webmvc-test")
 	testImplementation("org.springframework.boot:spring-boot-starter-flyway-test")
@@ -43,4 +57,26 @@ dependencies {
 
 tasks.withType<Test> {
 	useJUnitPlatform()
+	finalizedBy(tasks.jacocoTestReport)
+}
+
+tasks.named<JacocoReport>("jacocoTestReport") {
+	dependsOn(tasks.test)
+
+	reports {
+		html.required.set(true)
+	}
+
+	classDirectories.setFrom(
+		files(
+			classDirectories.files.map {
+				fileTree(it) {
+					exclude(
+						"**/config/**",
+						"**/AuthAPIApplication.class"
+					)
+				}
+			}
+		)
+	)
 }
