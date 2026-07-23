@@ -6,13 +6,23 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 public class HttpController {
 
-    @GetMapping("/public")
-    public String publicRoute() {
-        return "<h1> Rota Pública, sinta-se livre para acessar! </h1>";
+    @GetMapping("/admin")
+    public String adminRoute() {
+        return "<h1> ADMIN, você está acessando o área administrativa do app! </h1>";
     }
 
-    @GetMapping("/private")
-    public String privateRoute() {
-        return "<h1> Rota Privada, somente pessoas autorizadas! </h1>";
+    @GetMapping("/user")
+    public String userRoute() {
+        return "<h1> USER, você está acessando a área geral do app! </h1>";
+    }
+
+    @GetMapping("/public")
+    public String publicRoute() {
+        return "<h1> Público, você está acessando uma área pública do app! </h1>";
+    }
+
+    @GetMapping("/login")
+    public String loginRoute() {
+        return "login";
     }
 }
